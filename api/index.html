@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Gutschein-Simulator</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 30px; background-color: #f4f6f8; color: #333; }
+        .card { max-width: 700px; background: white; padding: 25px; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+        .info-box { background: #e9ecef; padding: 15px; border-radius: 6px; font-size: 13.5px; margin-bottom: 25px; border-left: 4px solid #007bff; line-height: 1.5; }
+        .field { margin-bottom: 18px; }
+        label { display: block; font-weight: bold; margin-bottom: 4px; font-size: 14px; color: #2c3e50; }
+        .help-text { font-size: 11.5px; color: #6c757d; margin-top: 4px; line-height: 1.3; }
+        input { width: 100%; padding: 10px; border: 1px solid #ced4da; border-radius: 4px; box-sizing: border-box; font-size: 14px; }
+        input:focus { border-color: #80bdff; outline: none; }
+        button { background: #007bff; color: white; padding: 14px; border: none; border-radius: 6px; width: 100%; font-size: 16px; font-weight: bold; cursor: pointer; margin-top: 15px; transition: background 0.2s; }
+        button:hover { background: #0056b3; }
+        #res { margin-top: 25px; padding: 20px; border-radius: 6px; font-weight: bold; text-align: center; display: none; font-size: 16px; }
+        .yes-20 { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .yes-10 { background: #fff3cd; color: #856404; border: 1px solid #ffeeba; }
+        .no { background: #e2e3e5; color: #383d41; border: 1px solid #d6d8db; }
+        
+        details { background: #f8f9fa; padding: 15px; border-radius: 6px; border: 1px solid #dee2e6; margin-bottom: 20px; }
+        summary { font-weight: bold; font-size: 14px; cursor: pointer; color: #007bff; outline: none; margin-bottom: 10px; }
+        .hidden-group { margin-top: 15px; padding-top: 15px; border-top: 1px dashed #ced4da; }
+        .hidden-group h4 { margin: 0 0 10px 0; font-size: 13px; color: #495057; text-transform: uppercase; letter-spacing: 0.5px; }
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+        .grid .field { margin-bottom: 0; }
+        .grid label { font-size: 12px; }
+        .grid .help-text { font-size: 10px; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h2>🛒 Gutschein-Ausspielung (ML-Prototyp)</h2>
+        <div class="info-box">
+            <strong>Dynamic Pricing Logik (Tiered System)</strong><br>
+            Das ML-Modell bewertet das Session-Verhalten in Echtzeit:<br>
+            • <strong>0% - 19.9%</strong>: Kein Gutschein (Reiner Schaufensterbummler).<br>
+            • <strong>20% - 49.9%</strong>: 🎁 <strong>20% Gutschein</strong> (Hoher Kaufwiderstand).<br>
+            • <strong>50% - 80.0%</strong>: 🎁 <strong>10% Gutschein</strong> (Leichter Schubs nötig).<br>
+            • <strong>Über 80%</strong>: Kein Gutschein (Margenschutz, kauft ohnehin).
+        </div>
+
+        <form id="f">
+            <div class="field">
+                <label>Saisonalität: Weihnachtszeit (0 = Nein, 1 = Ja)</label>
+                <input id="h" type="number" min="0" max="1" value="1">
+                <div class="help-text">Ist aktuell Hochsaison? In der Vorweihnachtszeit gibt es mehr Traffic, aber prozentual oft weniger Käufe (hoher Anteil an unentschlossenen Suchern).</div>
+            </div>
+            <div class="field">
+                <label>Total Clicks (Gesamte Interaktionen)</label>
+                <input id="c" type="number" min="1" value="25">
+                <div class="help-text">Summe aller Klicks in der aktuellen Sitzung. Ein Wert um die 30 zeigt oft hohes Engagement, bei extrem vielen Klicks kippt es häufig in Frustration.</div>
+            </div>
+            <div class="field">
+                <label>Exit Rate der aktuellen Seite (0.0 bis 1.0)</label>
+                <input id="e" type="number" step="0.01" min="0.0" max="1.0" value="0.05">
+                <div class="help-text">Wie viel Prozent der Nutzer haben den Webshop auf dieser spezifischen Seite in der Vergangenheit verlassen? Hohe Werte deuten auf "Sackgassen" hin.</div>
+            </div>
+            <div class="field">
+                <label>Page Value (Seitenwert in €)</label>
+                <input id="p" type="number" step="0.1" min="0.0" value="12.5">
+                <div class="help-text">Der kumulierte historische Wert der bisher besuchten Seiten. Addiert sich während der Session auf. Besucht der Nutzer den Warenkorb (historisch hoher Wert), steigt diese Metrik massiv. Oft der stärkste Prädiktor im Modell!</div>
+            </div>
+
+            <details>
+                <summary>⚙️ Versteckte Tracking-Werte (Hintergrund-Features)</summary>
+                <div class="help-text" style="margin-bottom: 15px;">Diese granular erfassten Daten sendet das Web-Tracking live an die API. Für Stakeholder sind sie oft zu abstrakt, das Modell nutzt sie jedoch zur Feinjustierung der Vorhersage.</div>
+                
+                <div class="hidden-group">
+                    <h4>Seitenaufrufe & Verweildauer</h4>
+                    <div class="grid">
+                        <div class="field">
+                            <label>ProductRelated</label>
+                            <input id="pr" type="number" value="10">
+                            <div class="help-text">Anzahl besuchter Produktseiten.</div>
+                        </div>
+                        <div class="field">
+                            <label>Product_Duration (s)</label>
+                            <input id="prd" type="number" value="200">
+                            <div class="help-text">Verweildauer auf Produktseiten.</div>
+                        </div>
+                        <div class="field">
+                            <label>Informational</label>
+                            <input id="inf" type="number" value="0">
+                            <div class="help-text">Besuchte Info-Seiten (z.B. FAQ).</div>
+                        </div>
+                        <div class="field">
+                            <label>Info_Duration (s)</label>
+                            <input id="infd" type="number" value="0">
+                            <div class="help-text">Verweildauer auf Info-Seiten.</div>
+                        </div>
+                        <div class="field">
+                            <label>Administrative</label>
+                            <input id="adm" type="number" value="0">
+                            <div class="help-text">Besuchte Kontoseiten (Login etc.).</div>
+                        </div>
+                        <div class="field">
+                            <label>Admin_Duration (s)</label>
+                            <input id="admd" type="number" value="0">
+                            <div class="help-text">Dauer auf Verwaltungsseiten.</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="hidden-group">
+                    <h4>Verhalten & Technik</h4>
+                    <div class="grid">
+                        <div class="field">
+                            <label>BounceRates (0.0-1.0)</label>
+                            <input id="br" type="number" step="0.01" value="0.0">
+                            <div class="help-text">Nutzer sprang sofort ab (nur 1 Seite gesehen).</div>
+                        </div>
+                        <div class="field">
+                            <label>SpecialDay (0.0-1.0)</label>
+                            <input id="sd" type="number" step="0.1" value="0.0">
+                            <div class="help-text">Nähe zu Feiertagen (z.B. Muttertag).</div>
+                        </div>
+                        <div class="field">
+                            <label>Weekend (0 oder 1)</label>
+                            <input id="wk" type="number" min="0" max="1" value="0">
+                            <div class="help-text">Findet die Session am Wochenende statt?</div>
+                        </div>
+                        <div class="field">
+                            <label>TrafficType (1-20)</label>
+                            <input id="tt" type="number" value="1">
+                            <div class="help-text">Herkunftsquelle (z.B. Google Ads, Direkt).</div>
+                        </div>
+                        <div class="field">
+                            <label>Browser (1-13)</label>
+                            <input id="bw" type="number" value="1">
+                            <div class="help-text">Genutzter Webbrowser (ID).</div>
+                        </div>
+                        <div class="field">
+                            <label>Region (1-9)</label>
+                            <input id="rg" type="number" value="1">
+                            <div class="help-text">Geografische Region (ID).</div>
+                        </div>
+                        <div class="field">
+                            <label>OperatingSystem (1-8)</label>
+                            <input id="os" type="number" value="1">
+                            <div class="help-text">Genutztes Betriebssystem (ID).</div>
+                        </div>
+                    </div>
+                </div>
+            </details>
+
+            <button type="button" onclick="calc()">Live-Prediction abfragen</button>
+        </form>
+        <div id="res"></div>
+    </div>
+    <script>
+        async function calc() {
+            const form = document.getElementById('f');
+            if(!form.checkValidity()) { form.reportValidity(); return; }
+            
+            const body = {
+                Administrative: parseInt(document.getElementById('adm').value),
+                Administrative_Duration: parseFloat(document.getElementById('admd').value),
+                Informational: parseInt(document.getElementById('inf').value),
+                Informational_Duration: parseFloat(document.getElementById('infd').value),
+                ProductRelated: parseInt(document.getElementById('pr').value),
+                ProductRelated_Duration: parseFloat(document.getElementById('prd').value),
+                BounceRates: parseFloat(document.getElementById('br').value),
+                ExitRates: parseFloat(document.getElementById('e').value),
+                PageValues: parseFloat(document.getElementById('p').value),
+                SpecialDay: parseFloat(document.getElementById('sd').value),
+                OperatingSystems: parseInt(document.getElementById('os').value),
+                Browser: parseInt(document.getElementById('bw').value),
+                Region: parseInt(document.getElementById('rg').value),
+                TrafficType: parseInt(document.getElementById('tt').value),
+                Weekend: parseInt(document.getElementById('wk').value),
+                Is_Holiday_Season: parseInt(document.getElementById('h').value),
+                Total_Clicks: parseInt(document.getElementById('c').value)
+            };
+            try {
+                const r = await fetch('/predict', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(body) });
+                const d = await r.json();
+                const box = document.getElementById('res');
+                box.style.display = 'block';
+                const prob = (d.purchase_probability * 100).toFixed(1);
+                
+                if(d.send_voucher) {
+                    box.className = d.voucher_value === 20 ? 'yes-20' : 'yes-10';
+                    box.innerHTML = `Vorhersage: ${prob}% Kaufwahrscheinlichkeit<br><br>🎁 ${d.voucher_value}% GUTSCHEIN AUSPIELEN!`;
+                } else {
+                    box.className = 'no';
+                    let reason = prob < 20 ? "Kunde zu unwahrscheinlich (Streuverlust)" : "Kunde kauft ohnehin (Margenschutz)";
+                    box.innerHTML = `Vorhersage: ${prob}% Kaufwahrscheinlichkeit<br><br>❌ KEIN GUTSCHEIN (${reason})`;
+                }
+            } catch (error) {
+                alert("Fehler bei der API-Verbindung!");
+            }
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Gutschein-Simulator</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 30px; background-color: #f4f6f8; color: #333; }
+        .card { max-width: 650px; background: white; padding: 25px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .info-box { background: #e9ecef; padding: 15px; border-radius: 6px; font-size: 13.5px; margin-bottom: 20px; border-left: 4px solid #007bff; line-height: 1.5; }
+        .field { margin-bottom: 16px; }
+        label { display: block; font-weight: bold; margin-bottom: 4px; font-size: 13px; }
+        .help-text { font-size: 11px; color: #666; margin-top: 3px; }
+        input { width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
+        button { background: #007bff; color: white; padding: 12px; border: none; border-radius: 4px; width: 100%; font-size: 15px; font-weight: bold; cursor: pointer; margin-top: 10px; }
+        button:hover { background: #0056b3; }
+        #res { margin-top: 20px; padding: 15px; border-radius: 4px; font-weight: bold; text-align: center; display: none; font-size: 15px; }
+        .yes { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .no { background: #e2e3e5; color: #383d41; border: 1px solid #d6d8db; }
+        
+        details { background: #f8f9fa; padding: 12px; border-radius: 4px; border: 1px solid #ddd; margin-bottom: 16px; }
+        summary { font-weight: bold; font-size: 13px; cursor: pointer; color: #007bff; outline: none; }
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 12px; }
+        .grid .field { margin-bottom: 0; }
+        .grid label { font-size: 11px; font-weight: normal; }
+        .grid input { padding: 6px; font-size: 12px; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h2>🛒 Gutschein-Ausspielung Live-Test</h2>
+        <div class="info-box">
+            <strong>Wann wird welcher Gutschein ausgespielt? (Tiered System)</strong><br>
+            • <strong>0% - 19.9%</strong>: Kein Gutschein (Kein Kaufinteresse).<br>
+            • <strong>20% - 49.9%</strong>: 🎁 <strong>20% Gutschein</strong> (Hoher Widerstand).<br>
+            • <strong>50% - 80.0%</strong>: 🎁 <strong>10% Gutschein</strong> (Leichter Widerstand).<br>
+            • <strong>Über 80%</strong>: Kein Gutschein (Nutzer kauft ohnehin).
+        </div>
+        <form id="f">
+            <div class="field">
+                <label>Weihnachtszeit (0 = Nein, 1 = Ja):</label>
+                <input id="h" type="number" min="0" max="1" value="1">
+                <div class="help-text">Vorweihnachtszeit? (Senkt oft Conversion-Rate durch Schaufensterbummleri.</div>
+            </div>
+            <div class="field">
+                <label>Gesamtklicks der Session:</label>
+                <input id="c" type="number" min="1" value="25">
+            </div>
+             <div class="field">
+                <label>Absprungrate (ExitRates 0.0 bis 1.0):</label>
+                <input id="e" type="number" step="0.01" min="0.0" max="1.0" value="0.05">
+            </div>
+            <div class="field">
+                <label>Seitenwert (PageValues ab 0.0):</label>
+                <input id="p" type="number" step="0.1" min="0.0" value="0.0">
+            </div>
+
+            <details>
+                <summary>⚙ﴏ Versteckte Tracking-Werte (Live-Simulation)</summary>
+                <div class="help-text">Diese Werte werden im echten Shop im Hintergrund gemessen. Teste hier, wie das Modell auf technische Änderungen reagiert.</div>
+                <div class="grid">
+                    <div class="field"><label>ProductRelated (Seiten9</label><input id="pr" type="number" value="10"></div>
+                    <div class="field"><label>ProductRelated_Duration (s)</label><input id="prd" type="number" value="200"></div>
+                    <div class="field"><label>Informational (Seiten)</label><input id="inf" type="number" value="0"></div>
+                    <div class="field"><label>Informational_Duration (s)</label><input id="infd" type="number" value="0"></div>
+                    <div class="field"><label>Administrative (Seiten)</label><input id="adm" type="number" value="0"></div>
+                    <div class="field"><label>Administrative_Duration (s)</label><input id="admd" type="number" value="0"></div>
+                    <div class="field"><label>BounceRates (0.0-1.0)</label><input id="br" type="number" step="0.01" value="0.0"></div>
+                    <div class="field"><label>SpecialDay (0.0-1.0)</label><input id="sd" type="number" step="0.1" value="0.0"></div>
+                    <div class="field"><label>OperatingSystems (1-8)</label><input id="os" type="number" value="1"></div>
+      (             <div class="field"><label>Browser (1-13)</label><input id="bw" type="number" value="1"></div>
+                    <div class="field"><label>Region (1-9)</label><input id="rg" type="number" value="1"></div>
+                    <div class="field"><label>TrafficType (1-20)</label><input id="tt" type="number" value="1"></div>
+                    <div class="field"><label>Weekend (0 / 1)</label><input id="wk" type="number" min="0" max="1" value="0"></div>
+                </div>
+            </details>
+
+            <button type="button" onclick="calc()">Kaufwahrscheinlichkeit berechnen</button>
+        </form>
+        <div id="res"></div>
+    </div>
+    <script>
+        async function calc() {
+            const form = document.getElementById('f');
+            if(!form.checkValidity()) {
+                form.reportValidity();
+                return;
+            }
+            const body = {
+                Administrative: parseInt(document.getElementById('adm').value),
+                Administrative_Duration: parseFloat(document.getElementById('admd').value),
+                Informational: parseInt(document.getElementById('inf').value),
+                Informational_Duration: parseFloat(document.getElementById('infd').value),
+                ProductRelated: parseInt(document.getElementById('pr').value),
+                ProductRelated_Duration: parseFloat(document.getElementById('prd').value),
+                BounceRates: parseFloat(document.getElementById('br').value),
+                ExitRates: parseFloat(document.getElementById('e').value),
+                PageValues: parseFloat(document.getElementById('p').value),
+                SpecialDay: parseFloat(document.getElementById('sd').value),
+                OperatingSystems: parseInt(document.getElementById('os').value),
+                Browser: parseInt(document.getElementById('bw').value),
+                Region: parseInt(document.getElementById('rg').value),
+                TrafficType: parseInt(document.getElementById('tt').value),
+                Weekend: parseInt(document.getElementById('wk').value),
+                Is_Holiday_Season: parseInt(document.getElementById('h').value),
+                Total_Clicks: parseInt(document.getElementById('c').value)
+            };
+            try {
+                const r = await fetch('/predict', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(body) });
+                const d = await r.json();
+                const box = document.getElementById('res');
+                box.style.display = 'block';
+                const prob = (d.purchase_probability * 100).toFixed(1);
+                
+                if(d.send_voucher) {
+                    box.className = 'yes';
+                    box.innerHTML = `Wahrscheinlichkeit: ${prob}%<br><br>🎁 ${d.voucher_value}% GUTSCHEIN AUSPIELEN!`;
+                } else {
+                    box.className = 'no';
+                    let reason = prob < 20 ? "Zu unwahrscheinlich" : "Kauft ohnehin sicher";
+                    box.innerHTML = `Wahrscheinlichkeit: ${prob}%<br><br>❌ KEIN GUTSCHEIN (${reason})`;
+                }
+            } catch (error) {
+                alert("Fehler bei der API-Verbindung!");
+            }
+        }
+    </script>
+</body>
+</html>
