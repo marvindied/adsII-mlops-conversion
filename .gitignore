@@ -6,8 +6,8 @@ venv/
 env/
 
 # MLflow
-mlruns/
-*.db
+# mlruns/
+# *.db
 
 # Daten
 data/
