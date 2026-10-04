@@ -8,8 +8,8 @@ from sklearn.linear_model import LogisticRegression
 from xgboost import XGBClassifier
 from sklearn.metrics import accuracy_score, f1_score, roc_auc_score
 
-# 1. Daten laden (Wir nutzen unseren eingefrorenen Stand!)
-# WICHTIG: Achte darauf, dass der Pfad stimmt, je nachdem von wo du das Skript aufrufst.
+# 1. Daten laden (Wir nutzen unseren reproduzierbaren Stand)
+# os.path.dirname(__file__) sorgt dafür, dass der Pfad relativ zu DIESEM Skript aufgelöst wird.
 data_path = os.path.join(os.path.dirname(__file__), '../data/processed_online_shoppers.csv')
 print(f"Lade Daten von: {data_path}")
 df = pd.read_csv(data_path)
@@ -21,7 +21,13 @@ y = df['Revenue']
 # 3. Train-Test-Split (80% Training, 20% Testing)
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42, stratify=y)
 
-# MLflow Experiment setzen
+# 4. MLflow Tracking Setup (WICHTIG FÜR REPRODUZIERBARKEIT)
+# Wir definieren den absoluten Pfad zur mlflow.db im Hauptverzeichnis.
+db_path = os.path.join(os.path.dirname(__file__), '../mlflow.db')
+# Replace '\' mit '/' um SQLite-Fehler auf Windows zu vermeiden:
+tracking_uri = f"sqlite:///{db_path.replace(chr(92), '/')}"
+
+mlflow.set_tracking_uri(tracking_uri)
 mlflow.set_experiment("Conversion_Prediction_Project")
 
 print("Starte MLflow Experimente...")
@@ -51,7 +57,7 @@ with mlflow.start_run(run_name="Baseline_LogReg"):
 # --- RUN 2: CHAMPION MODELL (XGBoost) ---
 with mlflow.start_run(run_name="Champion_XGBoost"):
     print("Trainiere Champion Modell (XGBoost)...")
-    # scale_pos_weight hilft bei imbalancierten Daten (85% False / 15% True -> Ratio ca. 5.5)
+    # scale_pos_weight hilft bei imbalancierten Daten
     xgb_model = XGBClassifier(n_estimators=100, learning_rate=0.1, max_depth=5, scale_pos_weight=5.5, random_state=42)
     xgb_model.fit(X_train, y_train)
     
@@ -73,4 +79,4 @@ with mlflow.start_run(run_name="Champion_XGBoost"):
     mlflow.log_metric("roc_auc", auc_xgb)
     mlflow.xgboost.log_model(xgb_model, "model")
 
-print("Training abgeschlossen. Du kannst die Ergebnisse nun in MLflow ansehen!")
+print(f"Training abgeschlossen. Ergebnisse wurden in {db_path} gespeichert.")
