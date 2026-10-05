@@ -32,4 +32,4 @@ jobs:
     # 4. Den Test ausführen, den wir gerade geschrieben haben
     - name: Run Pytest
       run: |
-        pytest tests/
+        python -m pytest tests/
