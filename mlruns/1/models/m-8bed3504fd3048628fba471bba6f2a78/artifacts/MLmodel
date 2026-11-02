@@ -1,0 +1,23 @@
+artifact_path: file:///C:/Users/AW19263/Documents/GitHub/adsII-mlops-conversion/mlruns/1/models/m-8bed3504fd3048628fba471bba6f2a78/artifacts
+flavors:
+  python_function:
+    env:
+      conda: conda.yaml
+      virtualenv: python_env.yaml
+    loader_module: mlflow.sklearn
+    model_path: model.skops
+    predict_fn: predict
+    python_version: 3.12.4
+  sklearn:
+    code: null
+    pickled_model: model.skops
+    serialization_format: skops
+    sklearn_version: 1.4.2
+    skops_trusted_types: null
+mlflow_version: 3.16.0
+model_id: m-8bed3504fd3048628fba471bba6f2a78
+model_size_bytes: 17277
+model_uuid: m-8bed3504fd3048628fba471bba6f2a78
+prompts: null
+run_id: 6487c0893f374ad9a402924946aafe0d
+utc_time_created: '2026-10-13 06:40:36.344011'

@@ -1,0 +1,22 @@
+artifact_path: file:///C:/Users/AW19263/Documents/GitHub/adsII-mlops-conversion/mlruns/1/models/m-5824644ba5ae4a1d9b28291cb79588a7/artifacts
+flavors:
+  python_function:
+    data: model.ubj
+    env:
+      conda: conda.yaml
+      virtualenv: python_env.yaml
+    loader_module: mlflow.xgboost
+    python_version: 3.12.4
+  xgboost:
+    code: null
+    data: model.ubj
+    model_class: xgboost.sklearn.XGBClassifier
+    model_format: ubj
+    xgb_version: 3.3.0
+mlflow_version: 3.16.0
+model_id: m-5824644ba5ae4a1d9b28291cb79588a7
+model_size_bytes: 226533
+model_uuid: m-5824644ba5ae4a1d9b28291cb79588a7
+prompts: null
+run_id: f13c42b5988e4cb59bf635dcd73d737d
+utc_time_created: '2026-10-13 06:41:00.339494'
